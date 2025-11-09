@@ -1,9 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { throttledGetDataFromApi } from './index';
-
-jest.mock('lodash', () => ({
-  throttle: (fn: unknown) => fn,
-}));
+import { throttledGetDataFromApi, THROTTLE_TIME } from './index';
 
 jest.mock('axios');
 
@@ -13,6 +9,8 @@ describe('throttledGetDataFromApi', () => {
   let client: { get: jest.Mock };
 
   beforeEach(() => {
+    jest.useFakeTimers();
+
     client = {
       get: jest.fn().mockResolvedValue({ data: { value: 'some-value' } }),
     };
@@ -20,6 +18,7 @@ describe('throttledGetDataFromApi', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     jest.clearAllMocks();
   });
 
@@ -32,12 +31,16 @@ describe('throttledGetDataFromApi', () => {
   });
 
   test('should perform request to correct provided url', async () => {
+    jest.advanceTimersByTime(THROTTLE_TIME);
+
     await throttledGetDataFromApi(testRoute);
 
     expect(client.get).toHaveBeenCalledWith(testRoute);
   });
 
   test('should return response data', async () => {
+    jest.advanceTimersByTime(THROTTLE_TIME);
+
     const result = await throttledGetDataFromApi(testRoute);
 
     expect(result).toEqual({ value: 'some-value' });
